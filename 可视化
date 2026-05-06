@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>汽车性能交互式探索 (作业3)</title>
+  <!-- 引入 Vega, Vega-Lite 和 Vega-Embed -->
+  <script src="https://cdn.jsdelivr.net/npm/vega@5.22.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.6.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.21.0"></script>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f9f9f9; }
+    h1 { color: #333; }
+    p { color: #666; max-width: 800px; }
+    #vis { margin-top: 20px; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); display: inline-block;}
+  </style>
+</head>
+<body>
+
+  <h1>汽车性能与产地交互式可视化探索</h1>
+  <p><strong>交互说明：</strong> 
+    1. <strong>平移和缩放：</strong> 在左侧散点图上滚动鼠标滚轮可以缩放，拖拽背景可以平移。<br>
+    2. <strong>刷选与多视图协同：</strong> 在左侧散点图上拖拽鼠标画一个矩形框（Brush），右侧的柱状图将动态更新，仅显示你选中车辆的平均数据。<br>
+    3. <strong>按需详情：</strong> 将鼠标悬停在任何散点上，可查看具体的汽车名称、年份和详细参数。<br>
+    4. <strong>图例过滤：</strong> 点击右侧图例中的产地（如 USA），可高亮特定产地的汽车。
+  </p>
+
+  <!-- 渲染可视化的容器 -->
+  <div id="vis"></div>
+
+  <script>
+    // Vega-Lite JSON 配置
+    const vlSpec = {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "data": {"url": "https://raw.githubusercontent.com/vega/vega-datasets/master/data/cars.json"},
+      "hconcat": [
+        {
+          "width": 400,
+          "height": 400,
+          "title": "马力 vs 每加仑英里数 (拖拽框选可联动右图)",
+          "params": [
+            {
+              "name": "brush",
+              "select": "interval"
+            },
+            {
+              "name": "grid",
+              "select": "interval",
+              "bind": "scales"
+            }
+          ],
+          "mark": {"type": "circle", "size": 60, "opacity": 0.7},
+          "encoding": {
+            "x": {"field": "Horsepower", "type": "quantitative", "title": "马力 (HP)"},
+            "y": {"field": "Miles_per_Gallon", "type": "quantitative", "title": "油耗 (每加仑英里数)"},
+            "color": {
+              "condition": {
+                "param": "brush",
+                "field": "Origin",
+                "type": "nominal",
+                "title": "产地"
+              },
+              "value": "lightgray"
+            },
+            "tooltip": [
+              {"field": "Name", "type": "nominal", "title": "车型"},
+              {"field": "Year", "type": "temporal", "timeUnit": "year", "title": "年份"},
+              {"field": "Horsepower", "type": "quantitative", "title": "马力"},
+              {"field": "Miles_per_Gallon", "type": "quantitative", "title": "油耗"}
+            ]
+          }
+        },
+        {
+          "width": 300,
+          "height": 400,
+          "title": "选中区域车辆的平均气缸数",
+          "mark": "bar",
+          "transform": [
+            {"filter": {"param": "brush"}}
+          ],
+          "encoding": {
+            "x": {"field": "Origin", "type": "nominal", "title": "产地"},
+            "y": {"field": "Cylinders", "type": "quantitative", "aggregate": "mean", "title": "平均气缸数"},
+            "color": {"field": "Origin", "type": "nominal", "legend": null},
+            "tooltip": [
+              {"field": "Cylinders", "type": "quantitative", "aggregate": "mean", "title": "平均气缸数"}
+            ]
+          }
+        }
+      ],
+      "config": {
+        "view": {"stroke": "transparent"},
+        "axis": {"gridColor": "#eee"}
+      }
+    };
+
+    // 嵌入图表
+    vegaEmbed('#vis', vlSpec).catch(console.error);
+  </script>
+</body>
+</html>
