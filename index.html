@@ -2,147 +2,99 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>汽车性能交互式探索 (作业3)</title>
-  <!-- 引入 Vega, Vega-Lite 和 Vega-Embed 库 -->
-  <script src="https://cdn.jsdelivr.net/npm/vega@5.22.1"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.6.0"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.21.0"></script>
+  <title>汽车工业演变交互式分析系统</title>
+  <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
   <style>
-    body { 
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-      padding: 30px; 
-      background-color: #f4f7f6; 
-      line-height: 1.6;
-    }
-    h1 { color: #2c3e50; margin-bottom: 10px; }
-    .instructions { 
-      background: #fff; 
-      padding: 15px 20px; 
-      border-left: 5px solid #3498db; 
-      border-radius: 4px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-      margin-bottom: 25px;
-      max-width: 900px;
-    }
-    .instructions strong { color: #2980b9; }
-    #vis { 
-      padding: 20px; 
-      background: white; 
-      border-radius: 12px; 
-      box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
-      display: inline-block;
-    }
-    .footer { margin-top: 20px; color: #888; font-size: 0.9em; }
+    body { font-family: sans-serif; background: #f9f9f9; padding: 20px; }
+    .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: inline-block; }
+    h2 { color: #333; margin-top: 0; }
+    .hint { color: #666; font-size: 0.9em; margin-bottom: 15px; border-left: 4px solid #42b983; padding-left: 10px; }
   </style>
 </head>
 <body>
-
-  <h1>汽车性能与产地交互式可视化探索</h1>
-  
-  <div class="instructions">
-    <p><strong>交互指南：</strong></p>
-    <ul>
-      <li><strong>图例过滤（关键修正）：</strong> 点击右侧图例中的产地名称（如 <strong>USA</strong>），可高亮该产地车辆并过滤右侧统计图（按住 Shift 可多选）。</li>
-      <li><strong>平移与缩放：</strong> 在左图使用鼠标滚轮进行缩放，点击并拖拽背景进行平移。</li>
-      <li><strong>刷选联动：</strong> 在左图拖拽鼠标绘制矩形框（Brush），右侧柱状图将实时计算选中区域内车辆的平均气缸数。</li>
-      <li><strong>按需详情：</strong> 悬停在任何数据点上，即可查看车型名称、年份及具体参数。</li>
-    </ul>
+  <div class="container">
+    <h2>汽车工业演变交互式分析系统</h2>
+    <div class="hint">
+      <strong>交互黑科技：</strong><br>
+      1. <b>跨维度联动：</b>在左图【散点图】中拖拽鼠标框选，下方【趋势图】和右侧【统计图】会实时重新计算选中车辆的数据。<br>
+      2. <b>时间过滤：</b>在下方【趋势图】点击具体年份，可高亮左图中对应年份的车型。<br>
+      3. <b>多选：</b>点击右侧【图例】可过滤产地。
+    </div>
+    <div id="vis"></div>
   </div>
 
-  <!-- 渲染可视化的容器 -->
-  <div id="vis"></div>
-
-  <div class="footer">
-    数据来源: Vega-datasets (cars.json) | 技术栈: Vega-Lite, JavaScript
-  </div>
-
-  <script>
-    // Vega-Lite 完整交互配置
-    const vlSpec = {
-      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-      "data": {"url": "https://raw.githubusercontent.com/vega/vega-datasets/master/data/cars.json"},
+<script>
+const spec = {
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "data": {"url": "https://raw.githubusercontent.com/vega/vega-datasets/master/data/cars.json"},
+  "vconcat": [
+    {
       "hconcat": [
         {
           "width": 450,
-          "height": 400,
-          "title": "马力 vs 每加仑英里数 (支持缩放、框选、图例过滤)",
+          "height": 350,
+          "title": "性能分布 (马力 vs 油耗)",
           "params": [
-            {
-              "name": "brush",
-              "select": "interval" // 矩形框选参数
-            },
-            {
-              "name": "grid",
-              "select": "interval",
-              "bind": "scales" // 缩放平移参数
-            },
-            {
-              "name": "leg_sel",
-              "select": {"type": "point", "fields": ["Origin"]},
-              "bind": "legend" // 将选择绑定到图例
-            }
+            {"name": "brush", "select": "interval"},
+            {"name": "grid", "select": "interval", "bind": "scales"}
           ],
-          "mark": {"type": "circle", "size": 60, "cursor": "pointer"},
+          "mark": {"type": "circle", "tooltip": true},
           "encoding": {
-            "x": {"field": "Horsepower", "type": "quantitative", "title": "马力 (HP)"},
-            "y": {"field": "Miles_per_Gallon", "type": "quantitative", "title": "油耗 (MPG)"},
+            "x": {"field": "Horsepower", "type": "quantitative"},
+            "y": {"field": "Miles_per_Gallon", "type": "quantitative"},
             "color": {
-              "condition": {
-                "param": "brush",
-                "field": "Origin",
-                "type": "nominal",
-                "title": "产地"
-              },
-              "value": "#ddd" // 未被框选时的颜色
+              "condition": {"param": "brush", "field": "Origin", "type": "nominal"},
+              "value": "grey"
             },
             "opacity": {
-              "condition": {"param": "leg_sel", "value": 0.8},
-              "value": 0.1 // 未被图例选中的点变透明
-            },
-            "tooltip": [
-              {"field": "Name", "type": "nominal", "title": "车型"},
-              {"field": "Year", "type": "temporal", "timeUnit": "year", "title": "生产年份"},
-              {"field": "Horsepower", "type": "quantitative", "title": "马力"},
-              {"field": "Miles_per_Gallon", "type": "quantitative", "title": "油耗"},
-              {"field": "Origin", "type": "nominal", "title": "产地"}
-            ]
+              "condition": {"param": "yearClick", "value": 1},
+              "value": 0.1
+            }
           }
         },
         {
-          "width": 250,
-          "height": 400,
+          "width": 150,
+          "height": 350,
           "title": "选中区域平均气缸数",
-          "mark": {"type": "bar", "cornerRadiusEnd": 4},
-          "transform": [
-            {"filter": {"param": "brush"}},   // 响应左图框选
-            {"filter": {"param": "leg_sel"}} // 响应图例点击
-          ],
+          "transform": [{"filter": {"param": "brush"}}],
+          "mark": "bar",
           "encoding": {
-            "x": {"field": "Origin", "type": "nominal", "title": "产地", "axis": {"labelAngle": 0}},
-            "y": {
-              "field": "Cylinders", 
-              "type": "quantitative", 
-              "aggregate": "mean", 
-              "title": "平均气缸数",
-              "scale": {"domain": [0, 8]}
-            },
-            "color": {"field": "Origin", "type": "nominal", "legend": null},
-            "tooltip": [
-              {"field": "Origin", "type": "nominal", "title": "产地"},
-              {"field": "Cylinders", "type": "quantitative", "aggregate": "mean", "title": "平均气缸数", "format": ".2f"}
-            ]
+            "x": {"field": "Origin", "type": "nominal", "axis": {"labelAngle": 0}},
+            "y": {"aggregate": "mean", "field": "Cylinders", "scale": {"domain": [0,8]}},
+            "color": {"field": "Origin", "type": "nominal", "legend": null}
           }
         }
+      ]
+    },
+    {
+      "width": 680,
+      "height": 150,
+      "title": "历年燃油效率演变趋势 (点击年份过滤)",
+      "params": [
+        {
+          "name": "yearClick",
+          "select": {"type": "point", "fields": ["Year"], "toggle": "true"}
+        }
       ],
-      "config": {
-        "view": {"stroke": "transparent"},
-        "axis": {"gridColor": "#f0f0f0", "titleFontSize": 12}
+      "transform": [{"filter": {"param": "brush"}}],
+      "mark": {"type": "line", "point": true},
+      "encoding": {
+        "x": {"timeUnit": "year", "field": "Year", "title": "年份"},
+        "y": {"aggregate": "mean", "field": "Miles_per_Gallon", "title": "平均 MPG"},
+        "color": {"field": "Origin", "type": "nominal"},
+        "opacity": {
+          "condition": {"param": "yearClick", "value": 1},
+          "value": 0.2
+        }
       }
-    };
+    }
+  ],
+  "config": {"view": {"stroke": null}}
+};
 
-    // 嵌入图表
-    vegaEmbed('#vis', vlSpec, {"actions": true}).catch(console.error);
-  </script>
+vegaEmbed('#vis', spec);
+</script>
 </body>
-</html> 
+</html>
