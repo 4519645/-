@@ -2,26 +2,25 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>汽车工业演变交互式分析系统</title>
+  <title>汽车数据联动分析系统</title>
   <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
   <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
   <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
-    .container { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); display: inline-block; }
-    h2 { margin-top: 0; color: #1a1a1a; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-    .hint { background: #e7f3ff; border-left: 5px solid #2196f3; padding: 15px; margin-bottom: 20px; font-size: 14px; line-height: 1.6; border-radius: 4px; }
-    b { color: #d32f2f; }
+    body { font-family: sans-serif; background: #f4f7f6; padding: 20px; }
+    .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); display: inline-block; }
+    h2 { margin-top: 0; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 8px; }
+    .guide { background: #fffbe6; border: 1px solid #ffe58f; padding: 12px; margin-bottom: 15px; border-radius: 4px; font-size: 14px; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>汽车工业演变交互式分析系统</h2>
-    <div class="hint">
-      <strong>💡 交互指南：</strong><br>
-      1. <b>框选过滤：</b>在左侧散点图内【鼠标拖拽】可选择特定车型，右侧和下方图表将实时联动。<br>
-      2. <b>图例交互：</b>点击右侧产地颜色（文字或方块），可【高亮】特定产地的汽车。<br>
-      3. <b>年份高亮：</b>点击下方折线图的【数据点】，上方散点图将只高亮该年份的车辆。
+  <div class="card">
+    <h2>汽车工业多维联动分析系统</h2>
+    <div class="guide">
+        <strong>交互说明：</strong><br>
+        1. <b>筛选产地：</b>直接点击图表最上方的【Origin】图例（文字或圆点）。<br>
+        2. <b>时间回溯：</b>点击最下方折线图上的【圆点】，上方散点图将高亮对应年份。<br>
+        3. <b>范围框选：</b>在散点图上拖拽鼠标，可观察局部数据的统计特征。
     </div>
     <div id="vis"></div>
   </div>
@@ -31,20 +30,20 @@ const spec = {
   "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
   "data": {"url": "https://raw.githubusercontent.com/vega/vega-datasets/master/data/cars.json"},
   
-  // 【关键改进1：在最外层定义共享交互】
+  // 定义全局交互参数
   "params": [
     {
-      "name": "originSelect",
+      "name": "origin_filter",
       "select": {"type": "point", "fields": ["Origin"]},
-      "bind": "legend"  // 绑定图例
+      "bind": "legend" 
+    },
+    {
+      "name": "year_filter",
+      "select": {"type": "point", "fields": ["Year"]}
     },
     {
       "name": "brush",
       "select": "interval"
-    },
-    {
-      "name": "yearClick",
-      "select": {"type": "point", "fields": ["Year"]}
     }
   ],
 
@@ -52,72 +51,71 @@ const spec = {
     {
       "hconcat": [
         {
-          "width": 450,
-          "height": 350,
+          "width": 400,
+          "height": 300,
           "title": "性能分布 (马力 vs 油耗)",
-          "mark": {"type": "circle", "size": 60, "tooltip": true},
+          "mark": {"type": "circle", "size": 50, "tooltip": true},
           "encoding": {
             "x": {"field": "Horsepower", "type": "quantitative"},
             "y": {"field": "Miles_per_Gallon", "type": "quantitative"},
             "color": {
-              "condition": {"param": "originSelect", "field": "Origin", "type": "nominal"},
-              "value": "lightgrey"
+              "condition": {"param": "origin_filter", "field": "Origin", "type": "nominal"},
+              "value": "#ddd"
             },
-            // 【关键改进2：散点图透明度受框选和年份点击双重控制】
             "opacity": {
               "condition": [
                 {"param": "brush", "value": 1},
-                {"param": "yearClick", "value": 1}
+                {"param": "year_filter", "value": 1}
               ],
-              "value": 0.05
+              "value": 0.1
             }
           }
         },
         {
-          "width": 150,
-          "height": 350,
-          "title": "选中区域平均气缸数",
+          "width": 180,
+          "height": 300,
+          "title": "平均气缸数 (实时统计)",
           "transform": [
             {"filter": {"param": "brush"}},
-            {"filter": {"param": "originSelect"}}
+            {"filter": {"param": "origin_filter"}}
           ],
           "mark": "bar",
           "encoding": {
             "x": {"field": "Origin", "type": "nominal", "axis": {"labelAngle": 0}},
-            "y": {"aggregate": "mean", "field": "Cylinders", "scale": {"domain": [0,8]}},
-            "color": {"field": "Origin", "type": "nominal", "legend": null}
+            "y": {"aggregate": "mean", "field": "Cylinders", "title": "Mean Cylinders"},
+            "color": {"field": "Origin", "type": "nominal", "legend": {"orient": "top", "title": "点击图例进行筛选 ->"}}
           }
         }
       ]
     },
     {
-      "width": 680,
-      "height": 150,
-      "title": "历年燃油效率演变 (点击年份可反向高亮)",
+      "width": 640,
+      "height": 120,
+      "title": "历年燃油效率演变趋势 (点击下方圆点高亮上方年份)",
       "transform": [
         {"filter": {"param": "brush"}},
-        {"filter": {"param": "originSelect"}}
+        {"filter": {"param": "origin_filter"}}
       ],
-      "mark": {"type": "line", "point": {"size": 80}, "cursor": "pointer"},
+      "mark": {"type": "line", "point": {"size": 100}, "cursor": "pointer"},
       "encoding": {
         "x": {"timeUnit": "year", "field": "Year", "title": "年份"},
         "y": {"aggregate": "mean", "field": "Miles_per_Gallon", "title": "平均 MPG"},
-        "color": {"field": "Origin", "type": "nominal"},
-        // 增加年份点击时的视觉反馈
+        "color": {"field": "Origin", "type": "nominal", "legend": null},
         "opacity": {
-          "condition": {"param": "yearClick", "value": 1},
+          "condition": {"param": "year_filter", "value": 1},
           "value": 0.2
         }
       }
     }
   ],
   "config": {
-    "view": {"stroke": "transparent"},
-    "axis": {"grid": true, "gridColor": "#eee"}
+    "view": {"stroke": null}
   }
 };
 
-vegaEmbed('#vis', spec, {"actions": false});
+vegaEmbed('#vis', spec, {"actions": false}).then(result => {
+    console.log("可视化加载成功");
+}).catch(console.error);
 </script>
 </body>
 </html>
