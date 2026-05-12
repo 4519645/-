@@ -1,7 +1,13 @@
 # 实验报告：汽车工业演变交互式分析系统 (作业 3)
 
 **项目部署地址 (Live Demo):** https://4519645.github.io/-/
-如若部署存在问题，烦请在本地部署
+如若部署存在问题，烦请在本地部署，最终结果应当如下
+<img width="1255" height="1251" alt="image" src="https://github.com/user-attachments/assets/3530c9f9-035f-41cd-9a03-1ee7e8a06f69" />
+<img width="1229" height="1009" alt="image" src="https://github.com/user-attachments/assets/68e07919-5692-4657-8702-77981baada37" />
+<img width="1242" height="1211" alt="image" src="https://github.com/user-attachments/assets/ed486dd6-d18d-48d2-b997-ef587237cdf8" />
+
+
+
 ## 1. 项目综述
 本项目基于经典的 `cars.json` 数据集，利用 **Vega-Lite** 构建了一个多视图协同的交互式探索系统。系统通过散点图、聚合柱状图和时间趋势图的联动，旨在揭示 1970-1982 年间，不同产地汽车在动力性能、燃油经济性以及技术演进路径上的差异。
 
