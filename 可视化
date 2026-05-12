@@ -145,4 +145,4 @@
     vegaEmbed('#vis', vlSpec, {"actions": true}).catch(console.error);
   </script>
 </body>
-</html>
+</html> 
